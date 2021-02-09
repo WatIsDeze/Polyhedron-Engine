@@ -23,6 +23,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define STAT_PICS       11
 #define STAT_MINUS      (STAT_PICS - 1)  // num frame for '-' stats digit
 
+extern cvar_t* ui_bootDemo;
+extern cvar_t* ui_bootDemoRandom;
+
 static struct {
     qboolean    initialized;        // ready to draw
 
@@ -1989,7 +1992,7 @@ static void SCR_DrawCrosshair(void)
     if (!scr_crosshair->integer)
         return;
 
-    x = (scr.hud_width - scr.crosshair_width) / 2;
+    x = (scr.hud_width - scr.crosshair_width ) / 2;
     y = (scr.hud_height - scr.crosshair_height) / 2;
 
     R_SetColor(scr.crosshair_color.u32);
@@ -2083,13 +2086,19 @@ static void SCR_DrawActive(void)
 {
     // if full screen menu is up, do nothing at all
     if (!UI_IsTransparent())
-        return;
+        //return;
 
     // draw black background if not active
     if (cls.state < ca_active) {
-        R_DrawFill8(0, 0, r_config.width, r_config.height, 0);
-        return;
+        //R_DrawFill8(0, 0, r_config.width, r_config.height, 0);
+        //return;
     }
+    
+    /*if (ui_bootDemo->integer == 0)
+    {
+        R_DrawFill8(0, 0, r_config.width, r_config.height, 0);
+    }*/
+
 
     if (cls.state == ca_cinematic) {
         if (cl.image_precache[0]) 
@@ -2117,8 +2126,8 @@ static void SCR_DrawActive(void)
     scr.hud_height = r_config.height;
     scr.hud_width = r_config.width;
 	
-	if (!cl_renderdemo->integer)
-		SCR_DrawDemo();
+	//if (!cl_renderdemo->integer && ui_bootDemo->integer == 0)
+		//SCR_DrawDemo();
 
     SCR_CalcVrect();
 
@@ -2172,7 +2181,7 @@ void SCR_UpdateScreen(void)
 
     // do 3D refresh drawing
     SCR_DrawActive();
-
+    
     // draw main menu
     UI_Draw(cls.realtime);
 

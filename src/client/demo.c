@@ -29,7 +29,11 @@ static cvar_t   *cl_demomsglen;
 static cvar_t   *cl_demowait;
 cvar_t   *cl_renderdemo;
 cvar_t   *cl_renderdemo_fps;
+extern cvar_t* ui_bootDemo;
+extern cvar_t* ui_bootDemoRandom;
 
+char bootDemoList[MAX_QPATH][MAX_QPATH];
+int bootDemoListCount;
 // =========================================================================
 
 /*
@@ -621,18 +625,42 @@ static int read_next_message(qhandle_t f)
     return 1;
 }
 
-static void finish_demo(int ret)
+void finish_demoA(int ret)
+{
+    Com_Error(ERR_DISCONNECT, "Demo finished");
+}
+
+
+void finish_demo(int ret)
 {
     char *s = Cvar_VariableString("nextserver");
 
     if (!s[0]) {
         if (ret == 0) {
-            Com_Error(ERR_DISCONNECT, "Demo finished");
+            if (ui_bootDemo->integer > 0)
+            {
+                char* demoName = { bootDemoList[0] };
+                if (ui_bootDemoRandom->integer) {
+                    int ran = min(bootDemoListCount - 1, rand() % bootDemoListCount);
+                    demoName = bootDemoList[ran];
+                }
+                char buffer[MAX_QPATH + 1];
+                memset(buffer, 0, MAX_QPATH);
+                sprintf(&buffer, "demo %s\n", demoName);
+                Cbuf_AddText(&cmd_buffer, buffer);
+                Cbuf_Execute(&cmd_buffer);
+                return;
+            }
+            else
+            {
+                Com_Error(ERR_DISCONNECT, "Demo finished");
+            }
+            
         } else {
             Com_Error(ERR_DROP, "Couldn't read demo: %s", Q_ErrorString(ret));
         }
     }
-
+    
     CL_Disconnect(ERR_RECONNECT);
 
     Cvar_Set("nextserver", "");
@@ -670,6 +698,18 @@ static int parse_next_message(int wait)
         cls.demo.eof = qtrue;
         return -1;
     }
+
+    //if (ui_bootDemo->integer == -1)
+    //{
+    //    Cvar_Set("bootdemo", "0");
+    //    cls.demo.eof = qtrue;
+    //    cls.state = ca_disconnected;
+    //    //CL_Disconnect(ERR_RECONNECT);
+    //    //Com_Error(ERR_DISCONNECT, "Demo finished");
+    //    //cls.demo.playback = NULL;
+    //    
+    //    return -1;
+    //}
 
     CL_ParseServerMessage();
 
@@ -1192,6 +1232,8 @@ void CL_CleanupDemos(void)
 
     if (cls.demo.playback) {
         FS_FCloseFile(cls.demo.playback);
+		Cvar_Set("bootdemo", "0");
+		Cvar_Set("bootdemorandom", "0");
 
         if (com_timedemo->integer && cls.demo.time_frames) {
             unsigned msec = Sys_Milliseconds();
@@ -1286,6 +1328,34 @@ void CL_InitDemos(void)
 
     Cmd_Register(c_demo);
     List_Init(&cls.demo.snapshots);
+
+	// Load bootDemo List
+	bootDemoListCount = 0;
+	FILE* fp = fopen("bDemoList.txt", "rb");
+	if (fp)
+	{
+		char bufferTemp[1024 + 1];
+		memset(bufferTemp, 0, 1024);
+		while (!feof(fp))
+		{
+			fgets(bufferTemp, 1024, fp);
+			char* p = &bootDemoList[bootDemoListCount++];
+			strcpy(p, bufferTemp);
+		}
+		fclose(fp);
+
+		if (bootDemoListCount)
+		{
+			Cvar_Set("bootdemo", "1");
+			Cvar_Set("bootdemorandom", "1");
+			/*char buffer[MAX_QPATH + 1];
+			memset(buffer, 0, MAX_QPATH);
+			sprintf(&buffer, "demo %s\n", bootDemoList[0]);
+			Cbuf_AddText(&cmd_buffer, buffer);
+			Cbuf_Execute(&cmd_buffer);*/
+		}
+
+	}
 }
 
 

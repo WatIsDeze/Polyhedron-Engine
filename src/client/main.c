@@ -3068,39 +3068,45 @@ CL_CheckForPause
 
 =================
 */
+extern cvar_t* ui_bootDemo;
 void CL_CheckForPause(void)
 {
-    if (cls.state != ca_active) {
-        // only pause when active
-        Cvar_Set("cl_paused", "0");
-        Cvar_Set("sv_paused", "0");
-        return;
-    }
-
-    if (cls.key_dest & (KEY_CONSOLE | KEY_MENU)) {
-        // only pause in single player
-        if (cl_paused->integer == 0 && cl_autopause->integer) {
-            Cvar_Set("cl_paused", "1");
-			OGG_TogglePlayback();
+    if (ui_bootDemo->integer == 0)
+    {
+        if (cls.state != ca_active) {
+            // only pause when active
+            Cvar_Set("cl_paused", "0");
+            Cvar_Set("sv_paused", "0");
+            return;
         }
-    } else if (cl_paused->integer == 1) {
-        // only resume after automatic pause
-        Cvar_Set("cl_paused", "0");
-		OGG_TogglePlayback();
-    }
 
-    // hack for demo playback pause/unpause
-    if (cls.demo.playback) {
-        // don't pause when running timedemo!
-        if (cl_paused->integer && !com_timedemo->integer) {
-            if (!sv_paused->integer) {
-                Cvar_Set("sv_paused", "1");
-                IN_Activate();
+        if (cls.key_dest & (KEY_CONSOLE | KEY_MENU)) {
+            // only pause in single player
+            if (cl_paused->integer == 0 && cl_autopause->integer) {
+                Cvar_Set("cl_paused", "1");
+                OGG_TogglePlayback();
             }
-        } else {
-            if (sv_paused->integer) {
-                Cvar_Set("sv_paused", "0");
-                IN_Activate();
+        }
+        else if (cl_paused->integer == 1) {
+            // only resume after automatic pause
+            Cvar_Set("cl_paused", "0");
+            OGG_TogglePlayback();
+        }
+
+        // hack for demo playback pause/unpause
+        if (cls.demo.playback) {
+            // don't pause when running timedemo!
+            if (cl_paused->integer && !com_timedemo->integer) {
+                if (!sv_paused->integer) {
+                    Cvar_Set("sv_paused", "1");
+                    IN_Activate();
+                }
+            }
+            else {
+                if (sv_paused->integer) {
+                    Cvar_Set("sv_paused", "0");
+                    IN_Activate();
+                }
             }
         }
     }

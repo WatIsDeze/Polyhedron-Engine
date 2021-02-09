@@ -28,7 +28,8 @@ LIST_DECL(ui_menus);
 cvar_t    *ui_debug;
 static cvar_t    *ui_open;
 static cvar_t    *ui_scale;
-
+cvar_t* ui_bootDemo;
+cvar_t* ui_bootDemoRandom;
 // ===========================================================================
 
 /*
@@ -128,11 +129,14 @@ void UI_ForceMenuOff(void)
         }
     }
 
-    Key_SetDest(Key_GetDest() & ~KEY_MENU);
-    uis.menuDepth = 0;
-    uis.activeMenu = NULL;
-    uis.mouseTracker = NULL;
-    uis.transparent = qfalse;
+    if (ui_bootDemo->integer < 1)
+    {    
+        Key_SetDest(Key_GetDest() & ~KEY_MENU);
+        uis.menuDepth = 0;
+        uis.activeMenu = NULL;
+        uis.mouseTracker = NULL;
+        uis.transparent = qfalse;
+    }
 }
 
 /*
@@ -143,7 +147,7 @@ UI_PopMenu
 void UI_PopMenu(void)
 {
     menuFrameWork_t *menu;
-
+    
     if (uis.menuDepth < 1)
         Com_Error(ERR_FATAL, "UI_PopMenu: depth < 1");
 
@@ -572,6 +576,7 @@ static void UI_PushMenu_f(void)
     s = Cmd_Argv(1);
     menu = UI_FindMenu(s);
     if (menu) {
+
         UI_PushMenu(menu);
     } else {
         Com_Printf("No such menu: %s\n", s);
@@ -633,6 +638,8 @@ void UI_Init(void)
 
     ui_debug = Cvar_Get("ui_debug", "0", 0);
     ui_open = Cvar_Get("ui_open", "1", 0);
+    ui_bootDemo = Cvar_Get("bootdemo", "0", 0);
+    ui_bootDemoRandom = Cvar_Get("bootdemorandom", "0", 0);
 
     UI_ModeChanged();
 

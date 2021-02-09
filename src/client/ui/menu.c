@@ -19,7 +19,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "ui.h"
 #include "server/server.h"
-
+extern cvar_t* ui_bootDemo;
+extern cvar_t* ui_bootDemoRandom;
 /*
 ===================================================================
 
@@ -1962,8 +1963,12 @@ void Menu_Size(menuFrameWork_t *menu)
     }
 
     // set menu horizontal base
+    float ddiv = 4;
+    if (strcmp(menu->name, "main"))
+        ddiv = 1;
+
     if (widest == -1) {
-        x = uis.width / 2;
+        x = (uis.width / 2) / ddiv;
     } else {
         // if menu has bitmaps, it is expected to have plaque and logo
         // align them horizontally to avoid going off screen on small resolution
@@ -1973,7 +1978,7 @@ void Menu_Size(menuFrameWork_t *menu)
         } else {
             w += menu->logo_rc.width;
         }
-        x = (uis.width + w) / 2 - widest;
+        x = ((uis.width + w) / 2 - widest)/ddiv;
     }
 
     // set menu vertical base
@@ -2201,14 +2206,17 @@ void Menu_Draw(menuFrameWork_t *menu)
 //
 // draw background
 //
-    if (menu->image) {
-        R_DrawStretchPic(0, menu->y1, uis.width,
-                         menu->y2 - menu->y1, menu->image);
-    } else {
-        R_DrawFill32(0, menu->y1, uis.width,
-                     menu->y2 - menu->y1, menu->color.u32);
+    if (ui_bootDemo->integer == 0)
+    {
+        if (menu->image) {
+            R_DrawStretchPic(0, menu->y1, uis.width,
+                menu->y2 - menu->y1, menu->image);
+        }
+        else {
+            R_DrawFill32(0, menu->y1, uis.width,
+                menu->y2 - menu->y1, menu->color.u32);
+        }
     }
-
 //
 // draw title bar
 //
@@ -2394,17 +2402,25 @@ menuSound_t Menu_MouseMove(menuCommon_t *item)
         return QMS_NOTHANDLED;
     }
 }
-
+extern void finish_demoA(int ret);
 static menuSound_t Menu_DefaultKey(menuFrameWork_t *m, int key)
 {
     menuCommon_t *item;
 
     switch (key) {
     case K_ESCAPE:
-    case K_MOUSE2:
-        UI_PopMenu();
-        return QMS_OUT;
+    case K_MOUSE2: {
+        if (strcmp(m->name, "main"))        {
+            UI_PopMenu();
+        }
+        else        {
+            if (ui_bootDemo->integer == 0) {
+                UI_PopMenu();
+            }
+        }
 
+        return QMS_OUT;
+    }
     case K_KP_UPARROW:
     case K_UPARROW:
     case 'k':
@@ -2442,8 +2458,28 @@ static menuSound_t Menu_DefaultKey(menuFrameWork_t *m, int key)
         // fall through
 
     case K_KP_ENTER:
-    case K_ENTER:
+    case K_ENTER: {
+      
+        if (!strcmp(m->name, "singleplayer"))
+        {
+            menuCommon_t* item2;
+            if (!(item2 = Menu_ItemAtCursor(m))) {
+                return QMS_NOTHANDLED;
+            }
+            if (!strcmp(item2->name, "easy") ||
+                !strcmp(item2->name, "medium") ||
+                !strcmp(item2->name, "hard") ||
+                !strcmp(item2->name, "nightmare"))
+            {
+                if (ui_bootDemo->integer == 1) {
+                    Cvar_Set("bootdemorandom", "0");
+                    Cvar_Set("bootdemo", "0");
+                }
+            }
+        }
+
         return Menu_SelectItem(m);
+    }
     }
 
     return QMS_NOTHANDLED;
